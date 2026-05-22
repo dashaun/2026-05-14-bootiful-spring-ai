@@ -20,6 +20,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.data.annotation.Id;
@@ -53,16 +54,19 @@ public class AssistantApplication {
     }
 
     @Bean
+    @Profile("!flyway")
     Customizer<HttpSecurity> httpSecurityCustomizer() {
         return http -> http.with(mcpClientOAuth2());
     }
 
     @Bean
+    @Profile("!flyway")
     QuestionAnswerAdvisor questionAnswerAdvisor(VectorStore vectorStore) {
         return QuestionAnswerAdvisor.builder(vectorStore).build();
     }
 
     @Bean
+    @Profile("!flyway")
     PromptChatMemoryAdvisor promptChatMemoryAdvisor(DataSource dataSource) {
         var jdbc = JdbcChatMemoryRepository.builder().dataSource(dataSource).build();
         var mwcm = MessageWindowChatMemory.builder().chatMemoryRepository(jdbc).build();
@@ -79,6 +83,7 @@ record Dog(@Id int id, String name, String owner, String description) {
 
 @Controller
 @ResponseBody
+@Profile("!flyway")
 @ImportRuntimeHints(AssistantController.Hints.class)
 class AssistantController {
 

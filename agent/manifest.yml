@@ -1,0 +1,31 @@
+---
+applications:
+  - name: assistant
+    path: target/agent-0.0.1-SNAPSHOT.jar
+    memory: 1G
+    disk_quota: 1G
+    instances: 1
+    # /actuator/health is gated by Spring Security (OAuth2 login redirect), so HTTP health check
+    # would never see a 2xx. Port check is sufficient — Tomcat binds $PORT once the context is up.
+    health-check-type: port
+    timeout: 180
+    buildpacks:
+      - java_buildpack_offline
+    env:
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 25.+ } }'
+      # Default Spring profile (openai) is picked up from application.properties.
+      # java-cfenv-boot maps the bound `ai-models` credentials to spring.ai.openai.* automatically.
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_SPRING_ISSUER_URI: https://auth.apps.tas-ndc.kuhn-labs.com
+      SPRING_AI_MCP_CLIENT_STREAMABLEHTTP_CONNECTIONS_SCHEDULER_URL: https://scheduler.apps.tas-ndc.kuhn-labs.com
+      # Bridge java-cfenv-boot-tanzu-genai (genai.locator.*) into spring.ai.openai.* so the
+      # Spring AI OpenAI starter can configure chat + embedding models against the bound `ai-models` service.
+      SPRING_AI_OPENAI_API_KEY: ${genai.locator.api-key}
+      SPRING_AI_OPENAI_BASE_URL: ${genai.locator.api-base}/openai
+      # Override the models from application-openai.properties to ones the bound `ai-models` service actually advertises.
+      SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL: google/gemma-4-31B-it
+      SPRING_AI_OPENAI_EMBEDDING_OPTIONS_MODEL: nomic-ai/nomic-embed-text-v2-moe
+      # nomic-embed-text-v2-moe is 768-dim, not 1536. Pair with a flyway task run to drop vector_store so it gets recreated.
+      SPRING_AI_VECTORSTORE_PGVECTOR_DIMENSIONS: 768
+    services:
+      - assistant-db
+      - assistant-ai

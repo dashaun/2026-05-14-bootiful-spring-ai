@@ -1,0 +1,16 @@
+---
+applications:
+  - name: auth
+    path: target/auth-0.0.1-SNAPSHOT.jar
+    memory: 1G
+    disk_quota: 1G
+    instances: 1
+    health-check-type: port
+    timeout: 180
+    buildpacks:
+      - java_buildpack_offline
+    env:
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 25.+ } }'
+      SPRING_APPLICATION_JSON: '{"spring":{"security":{"oauth2":{"authorizationserver":{"client":{"spring":{"registration":{"redirect-uris":["https://assistant.apps.tas-ndc.kuhn-labs.com/login/oauth2/code/spring"]}}}}}}}}'
+    services:
+      - assistant-db
